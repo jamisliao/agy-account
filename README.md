@@ -1,41 +1,45 @@
 # agy-account
 
-Google Antigravity CLI (`agy`) 多帳號管理與 macOS Keychain 毫秒級輪替工具。
+[English](README.md) | [繁體中文](README.zh-TW.md)
+
+Multi-account credential manager and millisecond-level profile switcher for Google Antigravity CLI (`agy`) on macOS.
 
 ---
 
-## 為什麼需要本工具？
+## Why agy-account?
 
-Google 官方 Antigravity CLI (`agy`) 在 macOS 上透過系統鑰匙圈（macOS Keychain，`Service='gemini'`, `Account='antigravity'`）存取使用者的 OAuth 憑證。
+The official Google Antigravity CLI (`agy`) stores its user OAuth credentials in the system keychain on macOS (`Service='gemini'`, `Account='antigravity'`).
 
-當您需要切換多個 Google 帳號（例如公務、個人或不同配額專用帳號），或是透過程式執行大量批次任務時，官方 CLI 每次切換帳號皆需重新開啟瀏覽器登入。
+When working across multiple accounts (e.g., work, personal, or dedicated quota accounts) or running automated batch agents, switching accounts normally requires re-opening a browser for OAuth consent each time.
 
-`agy-account` 直接讀取與寫入 macOS Keychain，將各帳號憑證快取於本地設定檔目錄，達成**免開瀏覽器、毫秒級即時切換**。
-
----
-
-## 核心功能
-
-1. **Keychain 快速切換**：直接置換系統鑰匙圈憑證，切換瞬間生效，終端機與 Paseo IDE 皆可立即使用新帳號。
-2. **跨帳號防污染機制**：回寫與同步前嚴格檢查 Token 內的 Email，確保不會意外覆蓋不同帳號的憑證。
-3. **自動帳號輪替 (Rotation)**：支援一鍵切換至下一個可用帳號，方便於批次任務遇 429 配額限制時自動重試。
-4. **完整生命週期管理**：支援 `save`、`switch`、`rotate`、`list`、`current`、`rename`、`delete`、`test`。
-5. **Python 模組支援**：除了 CLI 指令外，亦提供 `AccountManager` 與 `temporary_context` 上下文管理器供自動化腳本調用。
+`agy-account` interacts directly with the macOS Keychain, caching profiles locally and swapping active keychain credentials instantly in milliseconds without browser prompts.
 
 ---
 
-## 安裝方式
+## Key Features
 
-### 方法 1：執行安裝腳本（建立全域軟連結）
+1. **Millisecond Keychain Switching**: Swaps active credentials in the macOS Keychain directly. Changes take effect immediately across terminals and third-party tools (such as Paseo IDE).
+2. **Cross-Account Protection**: Compares token identity emails before syncing to prevent accidental profile overwrites.
+3. **Automated Rotation**: Offers one-command account rotation, ideal for handling rate limits (HTTP 429) during batch operations.
+4. **Full Lifecycle Management**: Supports `save`, `switch`, `rotate`, `list`, `current`, `rename`, `delete`, and `test`.
+5. **Python Module & CLI**: Functions as a standalone command-line tool or as an importable Python library with context manager support.
+
+---
+
+## Installation
+
+### Method 1: Install script (recommended)
+
+Create a global symlink in `~/.local/bin`:
 
 ```bash
 cd ~/opensource/agy-account
 ./install.sh
 ```
 
-這會將執行檔軟連結建立至 `~/.local/bin/agy-account`。請確認 `~/.local/bin` 已加入您的 `$PATH` 環境變數。
+Ensure `~/.local/bin` is included in your `$PATH`.
 
-### 方法 2：使用 pip 安裝
+### Method 2: Editable pip install
 
 ```bash
 cd ~/opensource/agy-account
@@ -44,101 +48,99 @@ pip install -e .
 
 ---
 
-## 指令使用說明
+## Command Reference
 
-### 1. 檢視目前狀態與清單
+### 1. View Status and Profiles
 
 ```bash
-# 顯示目前作用中的帳號
+# Display the currently active profile
 agy-account current
 
-# 列出所有已保存帳號與對應 Email
+# List all saved profiles and their corresponding Google emails
 agy-account list
 ```
 
-### 2. 切換帳號
+### 2. Switch Accounts
 
 ```bash
-# 切換至指定別名帳號
-agy-account switch <帳號別名>
+# Switch to a target profile
+agy-account switch <alias>
 
-# 自動輪替到下一個可用帳號
+# Automatically rotate to the next saved profile
 agy-account rotate
 ```
 
-### 3. 新增全新 Google 帳號
+### 3. Add a New Google Account
 
-當您需要加入一個全新的 Google 帳號時：
+To authenticate and register a new Google account:
 
 ```bash
-# 步驟 1：暫時移除 Keychain 憑證以觸發官方登入流程
+# Step 1: Temporarily clear keychain credentials to trigger the official login flow
 security delete-generic-password -s gemini -a antigravity 2>/dev/null
 agy -p "ping"
 
-# 步驟 2：在瀏覽器中完成 Google 授權
+# Step 2: Complete the Google OAuth flow in your browser
 
-# 步驟 3：將新登入的憑證儲存為別名
-agy-account save <新帳號別名>
+# Step 3: Save the newly authenticated session under an alias
+agy-account save <alias>
 ```
 
-### 4. 帳號憑證重新授權（過期時）
-
-若某帳號過期需要重新登入：
+### 4. Re-authenticate an Expired Account
 
 ```bash
-# 切換到該帳號
-agy-account switch <帳號別名>
+# Switch to the target profile
+agy-account switch <alias>
 
-# 重新登入並覆蓋存檔
+# Re-authenticate and overwrite
 security delete-generic-password -s gemini -a antigravity 2>/dev/null
 agy -p "ping"
-agy-account save <帳號別名>
+agy-account save <alias>
 ```
 
-### 5. 管理與維護
+### 5. Maintenance
 
 ```bash
-# 修改帳號別名
-agy-account rename <舊別名> <新別名>
+# Rename a profile alias
+agy-account rename <old-alias> <new-alias>
 
-# 刪除已儲存帳號
-agy-account delete <帳號別名>
+# Delete a saved profile
+agy-account delete <alias>
 
-# 測試當前帳號的 API 連線狀況
+# Test API connectivity for the currently active profile
 agy-account test
 ```
 
 ---
 
-## Python API 使用範例
+## Python Integration
 
-您可以在自動化腳本中直接匯入：
+You can import `AccountManager` directly in automation scripts:
 
 ```python
 from agy_account import AccountManager
 
 mgr = AccountManager()
 
-# 取得目前帳號
-print("目前帳號:", mgr.get_current_profile())
+# Get the current profile name
+print("Active profile:", mgr.get_current_profile())
 
-# 暫時切換工作帳號，離開 context 時自動復原
+# Temporarily switch accounts within a block, restoring the previous account on exit
 with mgr.temporary_context(target_alias="tool", restore_alias="work"):
-    # 在此區塊內，Keychain 會切換為 tool
+    # Runs using the 'tool' account credentials
     pass
-# 離開區塊後，自動切回 work
+# Automatically reverts to 'work'
 ```
 
 ---
 
-## 運作原理與目錄結構
+## Storage & Architecture
 
-* **系統憑證**：存放在 macOS Keychain (`Service='gemini'`, `Account='antigravity'`)。
-* **保存設定檔**：各別名的憑證檔案存放在 `~/.gemini/antigravity-cli/profiles/`（檔案權限限設 `0600` / 目錄 `0700`）。
-* **自訂目錄**：可透過環境變數 `ANTIGRAVITY_CLI_HOME` 覆寫基礎設定路徑。
+- **Active System Token**: Stored in the native macOS Keychain (`Service='gemini'`, `Account='antigravity'`).
+- **Profile Store**: Cached tokens reside in `~/.gemini/antigravity-cli/profiles/` (with strict `0700` directory and `0600` file permissions).
+- **Custom Location**: The base directory can be overridden using the `ANTIGRAVITY_CLI_HOME` environment variable.
 
 ---
 
-## 授權
+## License
 
 MIT License
