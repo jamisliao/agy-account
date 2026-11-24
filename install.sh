@@ -6,7 +6,7 @@ TARGET_DIR="${HOME}/.local/bin"
 
 mkdir -p "${TARGET_DIR}"
 
-ln -sf "${SCRIPT_DIR}/agy_account.py" "${TARGET_DIR}/agy-account"
+ln -sf "${SCRIPT_DIR}/src/agy_account/cli.py" "${TARGET_DIR}/agy-account"
 chmod +x "${TARGET_DIR}/agy-account"
 
 echo "✅ 成功安裝 agy-account 至 ${TARGET_DIR}/agy-account"

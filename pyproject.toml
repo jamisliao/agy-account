@@ -20,7 +20,7 @@ classifiers = [
 ]
 
 [project.scripts]
-agy-account = "agy_account:main"
+agy-account = "agy_account.cli:main"
 
-[tool.setuptools]
-py-modules = ["agy_account"]
+[tool.setuptools.packages.find]
+where = ["src"]
